@@ -68,3 +68,27 @@ async fn rejects_duplicate_discord_ids_and_detects_raw_nickname_changes() {
         .unwrap();
     assert_eq!(receiver.recv().await.unwrap().revision, 2);
 }
+
+#[tokio::test]
+async fn applies_admin_overrides_to_discord_snapshots() {
+    let repository = Repository::connect("sqlite::memory:").await.unwrap();
+    let (events, _) = broadcast::channel(8);
+    let sync = SnapshotSync::new(repository.clone(), Vec::new(), events);
+
+    sync.apply(vec![member(
+        "376674641676206080",
+        "OldDiscordName",
+        "staff",
+    )])
+    .await
+    .unwrap();
+
+    let records = repository
+        .members_by_keys(&["likholesye".into()])
+        .await
+        .unwrap();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].discord_id, "376674641676206080");
+    assert_eq!(records[0].nickname_raw, "Likholesye");
+    assert_eq!(records[0].badges, vec!["staff"]);
+}

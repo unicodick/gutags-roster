@@ -1,6 +1,6 @@
 use super::CollectorError;
-use crate::domain::{BadgeRule, RawMember, build_member_record};
-use crate::storage::{Repository, now_unix};
+use crate::domain::{BadgeRule, MemberRecord, RawMember, build_member_record, normalize_nickname};
+use crate::storage::{MemberOverride, Repository, now_unix};
 use std::collections::HashSet;
 use std::path::Path;
 use tokio::sync::broadcast;
@@ -37,6 +37,11 @@ impl SnapshotSync {
             .into_iter()
             .map(|member| build_member_record(member, &self.badge_rules, observed_at))
             .collect::<Result<Vec<_>, _>>()?;
+        let records = apply_overrides(
+            records,
+            self.repository.member_overrides().await?,
+            observed_at,
+        )?;
         self.apply_records(records).await
     }
 
@@ -55,6 +60,35 @@ impl SnapshotSync {
         let _ = self.events.send(ChangeEvent { revision });
         Ok(revision)
     }
+}
+
+fn apply_overrides(
+    mut records: Vec<MemberRecord>,
+    overrides: Vec<MemberOverride>,
+    observed_at: i64,
+) -> Result<Vec<MemberRecord>, CollectorError> {
+    for override_record in overrides {
+        let nickname_key = normalize_nickname(&override_record.nickname_raw)?;
+        let replacement = MemberRecord {
+            discord_id: override_record.discord_id.clone(),
+            nickname_raw: override_record.nickname_raw.trim().to_owned(),
+            nickname_key,
+            role_ids: override_record.role_ids,
+            badges: override_record.badges,
+            observed_at,
+        };
+
+        if let Some(record) = records
+            .iter_mut()
+            .find(|record| record.discord_id == override_record.discord_id)
+        {
+            *record = replacement;
+        } else {
+            records.push(replacement);
+        }
+    }
+
+    Ok(records)
 }
 
 fn snapshots_equal(

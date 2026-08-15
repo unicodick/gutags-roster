@@ -18,6 +18,14 @@ pub struct SystemStatus {
     pub last_source_sync_at: Option<i64>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MemberOverride {
+    pub discord_id: String,
+    pub nickname_raw: String,
+    pub role_ids: Vec<String>,
+    pub badges: Vec<String>,
+}
+
 impl SystemStatus {
     pub fn effective_source_status(&self, ttl_seconds: u64, now: i64) -> String {
         match self.last_source_sync_at {
@@ -36,6 +44,14 @@ struct MemberRow {
     role_ids_json: String,
     badges_json: String,
     observed_at: i64,
+}
+
+#[derive(Debug, FromRow)]
+struct MemberOverrideRow {
+    discord_id: String,
+    nickname_raw: String,
+    role_ids_json: String,
+    badges_json: String,
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
@@ -159,6 +175,26 @@ impl Repository {
                     role_ids: serde_json::from_str(&row.role_ids_json)?,
                     badges: serde_json::from_str(&row.badges_json)?,
                     observed_at: row.observed_at,
+                })
+            })
+            .collect()
+    }
+
+    pub async fn member_overrides(&self) -> Result<Vec<MemberOverride>, StorageError> {
+        let rows = sqlx::query_as::<_, MemberOverrideRow>(
+            "SELECT discord_id, nickname_raw, role_ids_json, badges_json
+             FROM member_overrides ORDER BY discord_id",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter()
+            .map(|row| {
+                Ok(MemberOverride {
+                    discord_id: row.discord_id,
+                    nickname_raw: row.nickname_raw,
+                    role_ids: serde_json::from_str(&row.role_ids_json)?,
+                    badges: serde_json::from_str(&row.badges_json)?,
                 })
             })
             .collect()
