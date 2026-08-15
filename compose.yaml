@@ -1,0 +1,34 @@
+services:
+  api:
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    environment:
+      GYTAGS_INGEST_TOKEN: ${GYTAGS_INGEST_TOKEN:?GYTAGS_INGEST_TOKEN is required}
+      GYTAGS_WS_TOKEN: ${GYTAGS_WS_TOKEN:?GYTAGS_WS_TOKEN is required}
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - gytags-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  scraper:
+    build:
+      context: .
+      target: scraper
+    restart: unless-stopped
+    environment:
+      GYTAGS_DISCORD_GUILD_ID: ${GYTAGS_DISCORD_GUILD_ID:?GYTAGS_DISCORD_GUILD_ID is required}
+      GYTAGS_DISCORD_TOKEN: ${GYTAGS_DISCORD_TOKEN:?GYTAGS_DISCORD_TOKEN is required}
+      GYTAGS_INGEST_TOKEN: ${GYTAGS_INGEST_TOKEN:?GYTAGS_INGEST_TOKEN is required}
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  gytags-data:

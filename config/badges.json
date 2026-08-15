@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "role_id": "1431742100940128347",
+      "badge_id": "academ",
+      "priority": 10
+    },
+    {
+      "role_id": "1433776648209039391",
+      "badge_id": "novichek",
+      "priority": 60
+    },
+    {
+      "role_id": "1433750152316719211",
+      "badge_id": "yrod",
+      "priority": 80
+    },
+    {
+      "role_id": "1431744883671957576",
+      "badge_id": "staff",
+      "priority": 100
+    },
+    {
+      "role_id": "1433909147987869728",
+      "badge_id": "staff",
+      "priority": 100
+    }
+  ]
+}
