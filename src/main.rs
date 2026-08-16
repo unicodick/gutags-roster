@@ -5,7 +5,7 @@ use tracing_subscriber::EnvFilter;
 
 use gytags_roster::api::{AppState, router};
 use gytags_roster::collector::{SnapshotSync, ensure_parent_directory};
-use gytags_roster::config::{Settings, load_badge_rules};
+use gytags_roster::config::{Settings, load_badge_rules, load_member_overrides};
 use gytags_roster::storage::Repository;
 
 #[tokio::main]
@@ -26,8 +26,15 @@ async fn main() -> anyhow::Result<()> {
     let repository = Repository::connect(&settings.database_url).await?;
     let badge_rules = load_badge_rules(&settings.badge_rules_path)
         .with_context(|| format!("loading {}", settings.badge_rules_path))?;
+    let member_overrides = load_member_overrides(&settings.member_overrides_path)
+        .with_context(|| format!("loading {}", settings.member_overrides_path))?;
     let (events, _) = broadcast::channel(128);
-    let sync = SnapshotSync::new(repository.clone(), badge_rules, events.clone());
+    let sync = SnapshotSync::new(
+        repository.clone(),
+        badge_rules,
+        member_overrides,
+        events.clone(),
+    );
     let state = AppState {
         repository: repository.clone(),
         events: events.clone(),

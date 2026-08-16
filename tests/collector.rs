@@ -1,5 +1,5 @@
 use gytags_roster::collector::{CollectorError, SnapshotSync};
-use gytags_roster::domain::RawMember;
+use gytags_roster::domain::{MemberOverride, RawMember};
 use gytags_roster::storage::Repository;
 use tokio::sync::broadcast;
 
@@ -15,7 +15,7 @@ fn member(discord_id: &str, nickname: &str, role_id: &str) -> RawMember {
 async fn skips_unchanged_snapshots_and_reports_revision() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, mut receiver) = broadcast::channel(8);
-    let sync = SnapshotSync::new(repository, Vec::new(), events);
+    let sync = SnapshotSync::new(repository, Vec::new(), Vec::new(), events);
 
     assert_eq!(
         sync.apply(vec![member("1", "Player", "staff")])
@@ -47,7 +47,7 @@ async fn skips_unchanged_snapshots_and_reports_revision() {
 async fn rejects_duplicate_discord_ids_and_detects_raw_nickname_changes() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, mut receiver) = broadcast::channel(8);
-    let sync = SnapshotSync::new(repository, Vec::new(), events);
+    let sync = SnapshotSync::new(repository, Vec::new(), Vec::new(), events);
 
     let error = sync
         .apply(vec![
@@ -73,7 +73,17 @@ async fn rejects_duplicate_discord_ids_and_detects_raw_nickname_changes() {
 async fn applies_admin_overrides_to_discord_snapshots() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, _) = broadcast::channel(8);
-    let sync = SnapshotSync::new(repository.clone(), Vec::new(), events);
+    let sync = SnapshotSync::new(
+        repository.clone(),
+        Vec::new(),
+        vec![MemberOverride {
+            discord_id: "376674641676206080".into(),
+            nickname: "Likholesye".into(),
+            role_ids: vec!["staff".into()],
+            badges: vec!["staff".into()],
+        }],
+        events,
+    );
 
     sync.apply(vec![member(
         "376674641676206080",
@@ -97,7 +107,7 @@ async fn applies_admin_overrides_to_discord_snapshots() {
 async fn rejects_snapshot_that_loses_more_than_half_of_roster() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, mut receiver) = broadcast::channel(8);
-    let sync = SnapshotSync::new(repository.clone(), Vec::new(), events);
+    let sync = SnapshotSync::new(repository.clone(), Vec::new(), Vec::new(), events);
     let initial = (0..6)
         .map(|index| member(&index.to_string(), &format!("Player{index}"), "staff"))
         .collect();
@@ -118,7 +128,7 @@ async fn rejects_snapshot_that_loses_more_than_half_of_roster() {
         }
     ));
     assert_eq!(repository.status().await.unwrap().revision, 1);
-    assert_eq!(repository.members_by_keys(&[]).await.unwrap().len(), 9);
+    assert_eq!(repository.members_by_keys(&[]).await.unwrap().len(), 6);
     assert!(receiver.try_recv().is_err());
 
     let half_snapshot = (0..3)

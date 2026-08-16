@@ -13,7 +13,7 @@ use tokio_tungstenite::tungstenite::Message;
 async fn buffers_update_during_websocket_handshake() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, _) = broadcast::channel(8);
-    let sync = SnapshotSync::new(repository.clone(), Vec::new(), events.clone());
+    let sync = SnapshotSync::new(repository.clone(), Vec::new(), Vec::new(), events.clone());
     let state = AppState {
         repository,
         events,

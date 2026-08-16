@@ -1,6 +1,8 @@
 use super::CollectorError;
-use crate::domain::{BadgeRule, MemberRecord, RawMember, build_member_record, normalize_nickname};
-use crate::storage::{MemberOverride, Repository, now_unix};
+use crate::domain::{
+    BadgeRule, MemberOverride, MemberRecord, RawMember, build_member_record, normalize_nickname,
+};
+use crate::storage::{Repository, now_unix};
 use std::collections::HashSet;
 use std::path::Path;
 use tokio::sync::broadcast;
@@ -16,6 +18,7 @@ pub struct ChangeEvent {
 pub struct SnapshotSync {
     repository: Repository,
     badge_rules: Vec<BadgeRule>,
+    member_overrides: Vec<MemberOverride>,
     events: broadcast::Sender<ChangeEvent>,
 }
 
@@ -23,11 +26,13 @@ impl SnapshotSync {
     pub fn new(
         repository: Repository,
         badge_rules: Vec<BadgeRule>,
+        member_overrides: Vec<MemberOverride>,
         events: broadcast::Sender<ChangeEvent>,
     ) -> Self {
         Self {
             repository,
             badge_rules,
+            member_overrides,
             events,
         }
     }
@@ -39,12 +44,12 @@ impl SnapshotSync {
             .into_iter()
             .map(|member| build_member_record(member, &self.badge_rules, observed_at))
             .collect::<Result<Vec<_>, _>>()?;
-        let overrides = self.repository.member_overrides().await?;
-        let override_ids = overrides
+        let override_ids = self
+            .member_overrides
             .iter()
             .map(|record| record.discord_id.clone())
             .collect::<HashSet<_>>();
-        let records = apply_overrides(records, overrides, observed_at)?;
+        let records = apply_overrides(records, &self.member_overrides, observed_at)?;
         self.apply_records(records, &override_ids).await
     }
 
@@ -90,17 +95,17 @@ fn snapshot_size_without_overrides(
 
 fn apply_overrides(
     mut records: Vec<MemberRecord>,
-    overrides: Vec<MemberOverride>,
+    overrides: &[MemberOverride],
     observed_at: i64,
 ) -> Result<Vec<MemberRecord>, CollectorError> {
     for override_record in overrides {
-        let nickname_key = normalize_nickname(&override_record.nickname_raw)?;
+        let nickname_key = normalize_nickname(&override_record.nickname)?;
         let replacement = MemberRecord {
             discord_id: override_record.discord_id.clone(),
-            nickname_raw: override_record.nickname_raw.trim().to_owned(),
+            nickname_raw: override_record.nickname.trim().to_owned(),
             nickname_key,
-            role_ids: override_record.role_ids,
-            badges: override_record.badges,
+            role_ids: override_record.role_ids.clone(),
+            badges: override_record.badges.clone(),
             observed_at,
         };
 

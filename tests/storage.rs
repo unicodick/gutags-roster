@@ -33,15 +33,3 @@ async fn reports_stale_after_source_ttl() {
     assert_eq!(status.effective_source_status(10, 105), "fresh");
     assert_eq!(status.effective_source_status(10, 111), "stale");
 }
-
-#[tokio::test]
-async fn reads_admin_member_overrides_from_migration() {
-    let repository = Repository::connect("sqlite::memory:").await.unwrap();
-    let overrides = repository.member_overrides().await.unwrap();
-
-    assert_eq!(overrides.len(), 3);
-    assert_eq!(overrides[0].nickname_raw, "Likholesye");
-    assert_eq!(overrides[0].badges, vec!["staff"]);
-    assert_eq!(overrides[2].nickname_raw, "TBEPDblHYA");
-    assert_eq!(overrides[2].badges, vec!["yrod"]);
-}

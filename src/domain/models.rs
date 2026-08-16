@@ -17,6 +17,17 @@ pub struct BadgeRule {
     pub priority: i32,
 }
 
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MemberOverride {
+    pub discord_id: String,
+    pub nickname: String,
+    #[serde(default)]
+    pub role_ids: Vec<String>,
+    #[serde(default)]
+    pub badges: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct MemberRecord {
     pub discord_id: String,
