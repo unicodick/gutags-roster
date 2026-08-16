@@ -55,22 +55,3 @@ Member statuses are `ok`, `ambiguous`, and `not_found`. Ambiguous nicknames neve
 ```
 
 The server responds with a new `snapshot`. When the stored snapshot changes, it sends an `update` containing the current revision and the members matching the current subscription.
-
-## Internal collector ingest
-
-Endpoint: `POST /internal/v1/ingest`.
-
-When `GYTAGS_INGEST_TOKEN` is configured, send it in the `X-Gytags-Ingest-Token` header.
-
-```json
-{
-  "type": "snapshot",
-  "members": [
-    {
-      "discord_id": "606522922240180249",
-      "nickname": "setunicode",
-      "role_ids": ["1431742100940128347"]
-    }
-  ]
-}
-```

@@ -18,8 +18,6 @@ async fn buffers_update_during_websocket_handshake() {
         repository,
         events,
         websocket_token: None,
-        ingest_token: None,
-        sync: sync.clone(),
         source_ttl_seconds: 300,
     };
 

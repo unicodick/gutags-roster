@@ -18,7 +18,8 @@ pub struct Settings {
     pub badge_rules_path: String,
     pub member_overrides_path: String,
     pub websocket_token: Option<String>,
-    pub ingest_token: Option<String>,
+    pub discord_token: String,
+    pub discord_guild_id: String,
     pub source_ttl_seconds: u64,
 }
 
@@ -32,20 +33,31 @@ pub enum ConfigError {
     InvalidBadgeRule { index: usize, message: &'static str },
     #[error("invalid member override at index {index}: {message}")]
     InvalidMemberOverride { index: usize, message: &'static str },
+    #[error("{0} is required")]
+    MissingEnvironment(&'static str),
 }
 
 impl Settings {
-    pub fn from_env() -> Self {
-        Self {
+    pub fn from_env() -> Result<Self, ConfigError> {
+        Ok(Self {
             bind_addr: BIND_ADDR.to_owned(),
             database_url: DATABASE_URL.to_owned(),
             badge_rules_path: BADGE_RULES_PATH.to_owned(),
             member_overrides_path: MEMBER_OVERRIDES_PATH.to_owned(),
             websocket_token: env::var("GYTAGS_WS_TOKEN").ok(),
-            ingest_token: env::var("GYTAGS_INGEST_TOKEN").ok(),
+            discord_token: required_env("GYTAGS_DISCORD_TOKEN")?,
+            discord_guild_id: required_env("GYTAGS_DISCORD_GUILD_ID")?,
             source_ttl_seconds: SOURCE_TTL_SECONDS,
-        }
+        })
     }
+}
+
+fn required_env(name: &'static str) -> Result<String, ConfigError> {
+    env::var(name)
+        .ok()
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+        .ok_or(ConfigError::MissingEnvironment(name))
 }
 
 pub fn load_member_overrides(path: impl AsRef<Path>) -> Result<Vec<MemberOverride>, ConfigError> {

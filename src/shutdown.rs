@@ -15,3 +15,7 @@ pub async fn wait() {
 
     let _ = ctrl_c.await;
 }
+
+pub async fn requested(mut receiver: tokio::sync::watch::Receiver<bool>) {
+    let _ = receiver.wait_for(|shutdown| *shutdown).await;
+}

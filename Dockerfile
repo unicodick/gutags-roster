@@ -5,7 +5,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY migrations ./migrations
 COPY src ./src
 
-RUN cargo build --release --bin gytags-roster --bin discord-scraper
+RUN cargo build --release --bin gytags-roster
 
 FROM debian:bookworm-slim AS runtime
 
@@ -17,10 +17,6 @@ WORKDIR /app
 COPY config ./config
 RUN mkdir -p /app/data
 
-FROM runtime AS api
+FROM runtime AS app
 COPY --from=builder /app/target/release/gytags-roster /usr/local/bin/gytags-roster
 ENTRYPOINT ["/usr/local/bin/gytags-roster"]
-
-FROM runtime AS scraper
-COPY --from=builder /app/target/release/discord-scraper /usr/local/bin/discord-scraper
-ENTRYPOINT ["/usr/local/bin/discord-scraper"]

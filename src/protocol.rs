@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::domain::RawMember;
-
 pub const PROTOCOL_VERSION: u16 = 1;
 
 #[derive(Debug, Deserialize)]
@@ -18,18 +16,6 @@ pub enum ClientMessage {
         nicknames: Vec<String>,
     },
     Ping,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum IngestRequest {
-    Snapshot { members: Vec<RawMember> },
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct IngestResponse {
-    pub status: String,
-    pub revision: i64,
 }
 
 #[derive(Debug, Serialize)]

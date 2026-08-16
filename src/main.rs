@@ -1,11 +1,12 @@
 use anyhow::Context;
 use std::path::Path;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, watch};
 use tracing_subscriber::EnvFilter;
 
 use gytags_roster::api::{AppState, router};
-use gytags_roster::collector::{SnapshotSync, ensure_parent_directory};
+use gytags_roster::collector::{DiscordGateway, SnapshotSync, ensure_parent_directory};
 use gytags_roster::config::{Settings, load_badge_rules, load_member_overrides};
+use gytags_roster::scraper::run;
 use gytags_roster::storage::Repository;
 
 #[tokio::main]
@@ -15,7 +16,7 @@ async fn main() -> anyhow::Result<()> {
         .with_env_filter(EnvFilter::new("info"))
         .init();
 
-    let settings = Settings::from_env();
+    let settings = Settings::from_env()?;
     if settings.database_url.starts_with("sqlite://") {
         let path = settings.database_url.trim_start_matches("sqlite://");
         if path != ":memory:" {
@@ -39,16 +40,24 @@ async fn main() -> anyhow::Result<()> {
         repository: repository.clone(),
         events: events.clone(),
         websocket_token: settings.websocket_token.clone(),
-        ingest_token: settings.ingest_token.clone(),
-        sync,
         source_ttl_seconds: settings.source_ttl_seconds,
     };
+    let gateway = DiscordGateway::new(settings.discord_token, settings.discord_guild_id);
 
     let listener = tokio::net::TcpListener::bind(&settings.bind_addr).await?;
     tracing::info!(address = %settings.bind_addr, "backend started");
-    axum::serve(listener, router(state))
-        .with_graceful_shutdown(gytags_roster::shutdown::wait())
-        .await?;
+    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+    tokio::spawn(async move {
+        gytags_roster::shutdown::wait().await;
+        let _ = shutdown_tx.send(true);
+    });
+
+    let api = axum::serve(listener, router(state))
+        .with_graceful_shutdown(gytags_roster::shutdown::requested(shutdown_rx.clone()));
+    tokio::try_join!(async { api.await.context("API server failed") }, async {
+        run(gateway, sync, shutdown_rx).await;
+        Ok::<(), anyhow::Error>(())
+    })?;
 
     Ok(())
 }
