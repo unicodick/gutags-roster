@@ -17,7 +17,6 @@ async fn buffers_update_during_websocket_handshake() {
     let state = AppState {
         repository,
         events,
-        websocket_token: None,
         source_ttl_seconds: 300,
     };
 

@@ -39,7 +39,6 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         repository: repository.clone(),
         events: events.clone(),
-        websocket_token: settings.websocket_token.clone(),
         source_ttl_seconds: settings.source_ttl_seconds,
     };
     let gateway = DiscordGateway::new(settings.discord_token, settings.discord_guild_id);

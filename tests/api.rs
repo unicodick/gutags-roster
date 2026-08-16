@@ -19,7 +19,6 @@ async fn exposes_source_freshness() {
     let state = AppState {
         repository,
         events,
-        websocket_token: Some("ws-secret".into()),
         source_ttl_seconds: 1,
     };
 

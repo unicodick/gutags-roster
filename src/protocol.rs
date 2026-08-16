@@ -8,8 +8,6 @@ pub enum ClientMessage {
     Hello {
         protocol_version: u16,
         #[serde(default)]
-        token: Option<String>,
-        #[serde(default)]
         nicknames: Vec<String>,
     },
     Subscribe {

@@ -8,7 +8,6 @@ Endpoint: `/ws`
 {
   "type": "hello",
   "protocol_version": 1,
-  "token": "optional-token",
   "nicknames": ["setunicode", "Royalty72"]
 }
 ```

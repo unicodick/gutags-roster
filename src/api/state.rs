@@ -6,6 +6,5 @@ use tokio::sync::broadcast;
 pub struct AppState {
     pub repository: Repository,
     pub events: broadcast::Sender<ChangeEvent>,
-    pub websocket_token: Option<String>,
     pub source_ttl_seconds: u64,
 }

@@ -5,7 +5,6 @@ services:
       target: app
     restart: unless-stopped
     environment:
-      GYTAGS_WS_TOKEN: ${GYTAGS_WS_TOKEN:?GYTAGS_WS_TOKEN is required}
       GYTAGS_DISCORD_GUILD_ID: ${GYTAGS_DISCORD_GUILD_ID:?GYTAGS_DISCORD_GUILD_ID is required}
       GYTAGS_DISCORD_TOKEN: ${GYTAGS_DISCORD_TOKEN:?GYTAGS_DISCORD_TOKEN is required}
     ports:

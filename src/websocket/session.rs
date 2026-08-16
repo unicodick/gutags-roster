@@ -43,7 +43,6 @@ async fn handle_socket(
     let mut subscribed_keys = match hello {
         ClientMessage::Hello {
             protocol_version,
-            token,
             nicknames,
         } => {
             if protocol_version != PROTOCOL_VERSION {
@@ -52,17 +51,6 @@ async fn handle_socket(
                     &ServerMessage::Error {
                         code: "unsupported_protocol".into(),
                         message: format!("supported protocol version is {PROTOCOL_VERSION}"),
-                    },
-                )
-                .await?;
-                return Ok(());
-            }
-            if !authorized(&state, token.as_deref()) {
-                send_json(
-                    &mut sender,
-                    &ServerMessage::Error {
-                        code: "unauthorized".into(),
-                        message: "invalid websocket token".into(),
                     },
                 )
                 .await?;
@@ -202,11 +190,4 @@ async fn send_json<T: Serialize>(
         .send(Message::Text(serde_json::to_string(value)?.into()))
         .await?;
     Ok(())
-}
-
-fn authorized(state: &AppState, token: Option<&str>) -> bool {
-    match &state.websocket_token {
-        Some(expected) => token == Some(expected),
-        None => true,
-    }
 }
