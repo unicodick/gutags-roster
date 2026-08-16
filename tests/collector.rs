@@ -1,4 +1,4 @@
-use gytags_roster::collector::SnapshotSync;
+use gytags_roster::collector::{CollectorError, SnapshotSync};
 use gytags_roster::domain::RawMember;
 use gytags_roster::storage::Repository;
 use tokio::sync::broadcast;
@@ -91,4 +91,39 @@ async fn applies_admin_overrides_to_discord_snapshots() {
     assert_eq!(records[0].discord_id, "376674641676206080");
     assert_eq!(records[0].nickname_raw, "Likholesye");
     assert_eq!(records[0].badges, vec!["staff"]);
+}
+
+#[tokio::test]
+async fn rejects_snapshot_that_loses_more_than_half_of_roster() {
+    let repository = Repository::connect("sqlite::memory:").await.unwrap();
+    let (events, mut receiver) = broadcast::channel(8);
+    let sync = SnapshotSync::new(repository.clone(), Vec::new(), events);
+    let initial = (0..6)
+        .map(|index| member(&index.to_string(), &format!("Player{index}"), "staff"))
+        .collect();
+
+    assert_eq!(sync.apply(initial).await.unwrap(), 1);
+    receiver.recv().await.unwrap();
+
+    let partial = (0..2)
+        .map(|index| member(&index.to_string(), &format!("Player{index}"), "staff"))
+        .collect();
+    let error = sync.apply(partial).await.unwrap_err();
+
+    assert!(matches!(
+        error,
+        CollectorError::SnapshotTooSmall {
+            actual: 2,
+            minimum: 3
+        }
+    ));
+    assert_eq!(repository.status().await.unwrap().revision, 1);
+    assert_eq!(repository.members_by_keys(&[]).await.unwrap().len(), 9);
+    assert!(receiver.try_recv().is_err());
+
+    let half_snapshot = (0..3)
+        .map(|index| member(&index.to_string(), &format!("Player{index}"), "staff"))
+        .collect();
+    assert_eq!(sync.apply(half_snapshot).await.unwrap(), 2);
+    assert_eq!(receiver.recv().await.unwrap().revision, 2);
 }

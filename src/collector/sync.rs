@@ -5,6 +5,8 @@ use std::collections::HashSet;
 use std::path::Path;
 use tokio::sync::broadcast;
 
+const MIN_RETAINED_SNAPSHOT_PERCENT: usize = 50;
+
 #[derive(Debug, Clone)]
 pub struct ChangeEvent {
     pub revision: i64,
@@ -37,19 +39,33 @@ impl SnapshotSync {
             .into_iter()
             .map(|member| build_member_record(member, &self.badge_rules, observed_at))
             .collect::<Result<Vec<_>, _>>()?;
-        let records = apply_overrides(
-            records,
-            self.repository.member_overrides().await?,
-            observed_at,
-        )?;
-        self.apply_records(records).await
+        let overrides = self.repository.member_overrides().await?;
+        let override_ids = overrides
+            .iter()
+            .map(|record| record.discord_id.clone())
+            .collect::<HashSet<_>>();
+        let records = apply_overrides(records, overrides, observed_at)?;
+        self.apply_records(records, &override_ids).await
     }
 
     async fn apply_records(
         &self,
         records: Vec<crate::domain::MemberRecord>,
+        override_ids: &HashSet<String>,
     ) -> Result<i64, CollectorError> {
         let previous_records = self.repository.members_by_keys(&[]).await?;
+        let previous_size = snapshot_size_without_overrides(&previous_records, override_ids);
+        let actual_size = snapshot_size_without_overrides(&records, override_ids);
+        let minimum_size = previous_size
+            .saturating_mul(MIN_RETAINED_SNAPSHOT_PERCENT)
+            .div_ceil(100);
+        if actual_size < minimum_size {
+            return Err(CollectorError::SnapshotTooSmall {
+                actual: actual_size,
+                minimum: minimum_size,
+            });
+        }
+
         if snapshots_equal(&previous_records, &records) {
             self.repository.record_sync(now_unix()).await?;
             return Ok(self.repository.status().await?.revision);
@@ -60,6 +76,16 @@ impl SnapshotSync {
         let _ = self.events.send(ChangeEvent { revision });
         Ok(revision)
     }
+}
+
+fn snapshot_size_without_overrides(
+    records: &[MemberRecord],
+    override_ids: &HashSet<String>,
+) -> usize {
+    records
+        .iter()
+        .filter(|record| !override_ids.contains(record.discord_id.as_str()))
+        .count()
 }
 
 fn apply_overrides(
