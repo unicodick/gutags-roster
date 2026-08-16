@@ -17,14 +17,19 @@ pub async fn websocket(
     upgrade: WebSocketUpgrade,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    let events = state.events.subscribe();
     upgrade.on_upgrade(move |socket| async move {
-        if let Err(error) = handle_socket(socket, state).await {
+        if let Err(error) = handle_socket(socket, state, events).await {
             tracing::debug!(%error, "websocket session ended");
         }
     })
 }
 
-async fn handle_socket(socket: WebSocket, state: AppState) -> Result<(), anyhow::Error> {
+async fn handle_socket(
+    socket: WebSocket,
+    state: AppState,
+    mut events: broadcast::Receiver<ChangeEvent>,
+) -> Result<(), anyhow::Error> {
     let (mut sender, mut receiver) = socket.split();
     let first_message = timeout(Duration::from_secs(10), receiver.next())
         .await
@@ -82,7 +87,6 @@ async fn handle_socket(socket: WebSocket, state: AppState) -> Result<(), anyhow:
     .await?;
     send_snapshot(&state, &mut sender, &subscribed_keys).await?;
 
-    let mut events = state.events.subscribe();
     loop {
         tokio::select! {
             incoming = receiver.next() => handle_incoming(

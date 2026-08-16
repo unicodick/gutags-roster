@@ -5,11 +5,12 @@ use gytags_roster::domain::RawMember;
 use gytags_roster::storage::Repository;
 use serde_json::json;
 use tokio::sync::broadcast;
+use tokio::time::{Duration, timeout};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
 #[tokio::test]
-async fn sends_snapshot_and_update_to_subscriber() {
+async fn buffers_update_during_websocket_handshake() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, _) = broadcast::channel(8);
     let sync = SnapshotSync::new(repository.clone(), Vec::new(), events.clone());
@@ -29,6 +30,14 @@ async fn sends_snapshot_and_update_to_subscriber() {
     });
 
     let (mut socket, _) = connect_async(format!("ws://{address}/ws")).await.unwrap();
+    sync.apply(vec![RawMember {
+        discord_id: "1".into(),
+        nickname: "Player".into(),
+        role_ids: Vec::new(),
+    }])
+    .await
+    .unwrap();
+
     socket
         .send(Message::Text(
             json!({
@@ -47,15 +56,11 @@ async fn sends_snapshot_and_update_to_subscriber() {
     let snapshot = socket.next().await.unwrap().unwrap();
     assert!(snapshot.into_text().unwrap().contains("snapshot"));
 
-    sync.apply(vec![RawMember {
-        discord_id: "1".into(),
-        nickname: "Player".into(),
-        role_ids: Vec::new(),
-    }])
-    .await
-    .unwrap();
-
-    let update = socket.next().await.unwrap().unwrap();
+    let update = timeout(Duration::from_secs(1), socket.next())
+        .await
+        .expect("update emitted during handshake was lost")
+        .unwrap()
+        .unwrap();
     assert!(update.into_text().unwrap().contains("update"));
 
     server.abort();
