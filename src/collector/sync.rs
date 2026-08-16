@@ -50,13 +50,15 @@ impl SnapshotSync {
             .map(|record| record.discord_id.clone())
             .collect::<HashSet<_>>();
         let records = apply_overrides(records, &self.member_overrides, observed_at)?;
-        self.apply_records(records, &override_ids).await
+        self.apply_records(records, &override_ids, observed_at)
+            .await
     }
 
     async fn apply_records(
         &self,
         records: Vec<crate::domain::MemberRecord>,
         override_ids: &HashSet<String>,
+        synced_at: i64,
     ) -> Result<i64, CollectorError> {
         let previous_records = self.repository.members_by_keys(&[]).await?;
         let previous_size = snapshot_size_without_overrides(&previous_records, override_ids);
@@ -72,12 +74,13 @@ impl SnapshotSync {
         }
 
         if snapshots_equal(&previous_records, &records) {
-            self.repository.record_sync(now_unix()).await?;
-            return Ok(self.repository.status().await?.revision);
+            return Ok(self.repository.record_sync(synced_at).await?);
         }
 
-        let revision = self.repository.replace_snapshot(&records).await?;
-        self.repository.record_sync(now_unix()).await?;
+        let revision = self
+            .repository
+            .replace_snapshot(&records, synced_at)
+            .await?;
         let _ = self.events.send(ChangeEvent { revision });
         Ok(revision)
     }

@@ -38,6 +38,12 @@ struct MemberRow {
     observed_at: i64,
 }
 
+#[derive(Debug, FromRow)]
+struct SystemStatusRow {
+    revision: String,
+    last_source_sync_at: Option<String>,
+}
+
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
 impl Repository {
@@ -57,8 +63,19 @@ impl Repository {
         Ok(Self { pool })
     }
 
-    pub async fn replace_snapshot(&self, members: &[MemberRecord]) -> Result<i64, StorageError> {
+    pub async fn replace_snapshot(
+        &self,
+        members: &[MemberRecord],
+        synced_at: i64,
+    ) -> Result<i64, StorageError> {
         let mut transaction = self.pool.begin().await?;
+        let revision = next_revision(&mut transaction).await?;
+        set_state(
+            &mut transaction,
+            LAST_SOURCE_SYNC_AT_KEY,
+            &synced_at.to_string(),
+        )
+        .await?;
         sqlx::query("DELETE FROM members")
             .execute(&mut *transaction)
             .await?;
@@ -79,12 +96,11 @@ impl Repository {
             .await?;
         }
 
-        let revision = next_revision(&mut transaction).await?;
         transaction.commit().await?;
         Ok(revision)
     }
 
-    pub async fn record_sync(&self, timestamp: i64) -> Result<(), StorageError> {
+    pub async fn record_sync(&self, timestamp: i64) -> Result<i64, StorageError> {
         let mut transaction = self.pool.begin().await?;
         set_state(
             &mut transaction,
@@ -92,31 +108,33 @@ impl Repository {
             &timestamp.to_string(),
         )
         .await?;
+        let revision = current_revision(&mut transaction).await?;
         transaction.commit().await?;
-        Ok(())
+        Ok(revision)
     }
 
     pub async fn status(&self) -> Result<SystemStatus, StorageError> {
-        let revision =
-            sqlx::query_scalar::<_, String>("SELECT value FROM system_state WHERE key = ?")
-                .bind(REVISION_KEY)
-                .fetch_one(&self.pool)
-                .await?
-                .parse::<i64>()
-                .map_err(|error| StorageError::InvalidRevision(error.to_string()))?;
-
-        let last_source_sync_at =
-            sqlx::query_scalar::<_, String>("SELECT value FROM system_state WHERE key = ?")
-                .bind(LAST_SOURCE_SYNC_AT_KEY)
-                .fetch_optional(&self.pool)
-                .await?
-                .filter(|value| !value.is_empty())
-                .map(|value| {
-                    value
-                        .parse::<i64>()
-                        .map_err(|_| StorageError::InvalidTimestamp(value))
-                })
-                .transpose()?;
+        let row = sqlx::query_as::<_, SystemStatusRow>(
+            "SELECT
+                (SELECT value FROM system_state WHERE key = ?) AS revision,
+                NULLIF((SELECT value FROM system_state WHERE key = ?), '') AS last_source_sync_at",
+        )
+        .bind(REVISION_KEY)
+        .bind(LAST_SOURCE_SYNC_AT_KEY)
+        .fetch_one(&self.pool)
+        .await?;
+        let revision = row
+            .revision
+            .parse::<i64>()
+            .map_err(|error| StorageError::InvalidRevision(error.to_string()))?;
+        let last_source_sync_at = row
+            .last_source_sync_at
+            .map(|value| {
+                value
+                    .parse::<i64>()
+                    .map_err(|_| StorageError::InvalidTimestamp(value))
+            })
+            .transpose()?;
 
         Ok(SystemStatus {
             revision,
@@ -184,23 +202,20 @@ async fn set_state(
 async fn next_revision(
     transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> Result<i64, StorageError> {
+    let revision = current_revision(transaction).await? + 1;
+
+    set_state(transaction, REVISION_KEY, &revision.to_string()).await?;
+    Ok(revision)
+}
+
+async fn current_revision(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+) -> Result<i64, StorageError> {
     let current = sqlx::query_scalar::<_, String>("SELECT value FROM system_state WHERE key = ?")
         .bind(REVISION_KEY)
         .fetch_one(&mut **transaction)
         .await?;
-    let revision = current
+    current
         .parse::<i64>()
-        .map_err(|_| StorageError::InvalidRevision(current.clone()))?
-        + 1;
-
-    sqlx::query(
-        "INSERT INTO system_state (key, value) VALUES (?, ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-    )
-    .bind(REVISION_KEY)
-    .bind(revision.to_string())
-    .execute(&mut **transaction)
-    .await?;
-
-    Ok(revision)
+        .map_err(|_| StorageError::InvalidRevision(current))
 }
