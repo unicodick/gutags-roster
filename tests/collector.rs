@@ -1,6 +1,6 @@
-use gytags_roster::collector::{CollectorError, SnapshotSync};
-use gytags_roster::domain::{BadgeGroup, BadgeRule, MemberOverride, RawMember};
-use gytags_roster::storage::Repository;
+use gutags_roster::collector::{CollectorError, SnapshotSync};
+use gutags_roster::domain::{BadgeGroup, BadgeRule, MemberOverride, RawMember};
+use gutags_roster::storage::Repository;
 use tokio::sync::broadcast;
 
 fn member(discord_id: &str, nickname: &str, role_id: &str) -> RawMember {

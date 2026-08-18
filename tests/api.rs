@@ -1,7 +1,7 @@
-use gytags_roster::api::{AppState, router};
-use gytags_roster::collector::SnapshotSync;
-use gytags_roster::domain::RawMember;
-use gytags_roster::storage::Repository;
+use gutags_roster::api::{AppState, router};
+use gutags_roster::collector::SnapshotSync;
+use gutags_roster::domain::RawMember;
+use gutags_roster::storage::Repository;
 use tokio::sync::broadcast;
 
 #[tokio::test]

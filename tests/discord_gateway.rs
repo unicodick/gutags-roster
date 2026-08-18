@@ -1,5 +1,5 @@
 use futures_util::{SinkExt, StreamExt};
-use gytags_roster::collector::DiscordGateway;
+use gutags_roster::collector::DiscordGateway;
 use serde_json::{Value, json};
 use tokio::net::TcpListener;
 use tokio_tungstenite::{accept_async, tungstenite::Message};

@@ -1,4 +1,4 @@
-# Gytags WebSocket Protocol v1
+# Gutags WebSocket Protocol v1
 
 Endpoint: `/ws`
 

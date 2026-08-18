@@ -1,5 +1,5 @@
 [package]
-name = "gytags-roster"
+name = "gutags-roster"
 version = "0.1.1"
 edition = "2024"
 license = "MIT"

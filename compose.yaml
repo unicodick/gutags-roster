@@ -5,16 +5,16 @@ services:
       target: app
     restart: unless-stopped
     environment:
-      GYTAGS_DISCORD_GUILD_ID: ${GYTAGS_DISCORD_GUILD_ID:?GYTAGS_DISCORD_GUILD_ID is required}
-      GYTAGS_DISCORD_TOKEN: ${GYTAGS_DISCORD_TOKEN:?GYTAGS_DISCORD_TOKEN is required}
+      GUTAGS_DISCORD_GUILD_ID: ${GUTAGS_DISCORD_GUILD_ID:?GUTAGS_DISCORD_GUILD_ID is required}
+      GUTAGS_DISCORD_TOKEN: ${GUTAGS_DISCORD_TOKEN:?GUTAGS_DISCORD_TOKEN is required}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
-      - gytags-data:/app/data
+      - gutags-data:/app/data
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/healthz"]
       interval: 10s
       timeout: 3s
       retries: 10
 volumes:
-  gytags-data:
+  gutags-data:

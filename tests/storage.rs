@@ -1,5 +1,5 @@
-use gytags_roster::domain::MemberRecord;
-use gytags_roster::storage::{Repository, age_seconds};
+use gutags_roster::domain::MemberRecord;
+use gutags_roster::storage::{Repository, age_seconds};
 
 fn member(discord_id: &str, nickname: &str) -> MemberRecord {
     MemberRecord {

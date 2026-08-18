@@ -1,4 +1,4 @@
-use gytags_roster::domain::{
+use gutags_roster::domain::{
     BadgeGroup, BadgeRule, DomainError, derive_badges, normalize_nickname, normalize_nicknames,
 };
 
@@ -72,8 +72,8 @@ fn normalizes_and_deduplicates_requested_nicknames() {
 
 #[test]
 fn rejects_empty_discord_ids() {
-    let error = gytags_roster::domain::build_member_record(
-        gytags_roster::domain::RawMember {
+    let error = gutags_roster::domain::build_member_record(
+        gutags_roster::domain::RawMember {
             discord_id: "  ".into(),
             nickname: "Player".into(),
             role_ids: Vec::new(),

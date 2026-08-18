@@ -6,7 +6,7 @@ use std::path::Path;
 use thiserror::Error;
 
 pub const BIND_ADDR: &str = "0.0.0.0:8080";
-pub const DATABASE_URL: &str = "sqlite://data/gytags.sqlite3";
+pub const DATABASE_URL: &str = "sqlite://data/gutags.sqlite3";
 pub const BADGE_RULES_PATH: &str = "config/badges.json";
 pub const MEMBER_OVERRIDES_PATH: &str = "config/overrides.json";
 pub const SOURCE_TTL_SECONDS: u64 = 172_800;
@@ -43,8 +43,8 @@ impl Settings {
             database_url: DATABASE_URL.to_owned(),
             badge_rules_path: BADGE_RULES_PATH.to_owned(),
             member_overrides_path: MEMBER_OVERRIDES_PATH.to_owned(),
-            discord_token: required_env("GYTAGS_DISCORD_TOKEN")?,
-            discord_guild_id: required_env("GYTAGS_DISCORD_GUILD_ID")?,
+            discord_token: required_env("GUTAGS_DISCORD_TOKEN")?,
+            discord_guild_id: required_env("GUTAGS_DISCORD_GUILD_ID")?,
             source_ttl_seconds: SOURCE_TTL_SECONDS,
         })
     }

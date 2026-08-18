@@ -1,4 +1,4 @@
-use gytags_roster::config::{ConfigError, load_badge_rules, load_member_overrides};
+use gutags_roster::config::{ConfigError, load_badge_rules, load_member_overrides};
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -9,7 +9,7 @@ fn temp_rules_path() -> PathBuf {
         .unwrap()
         .as_nanos();
     std::env::temp_dir().join(format!(
-        "gytags-badges-{}-{suffix}.json",
+        "gutags-badges-{}-{suffix}.json",
         std::process::id()
     ))
 }
@@ -20,7 +20,7 @@ fn temp_overrides_path() -> PathBuf {
         .unwrap()
         .as_nanos();
     std::env::temp_dir().join(format!(
-        "gytags-overrides-{}-{suffix}.json",
+        "gutags-overrides-{}-{suffix}.json",
         std::process::id()
     ))
 }

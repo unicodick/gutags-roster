@@ -5,7 +5,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY migrations ./migrations
 COPY src ./src
 
-RUN cargo build --release --bin gytags-roster
+RUN cargo build --release --bin gutags-roster
 
 FROM debian:bookworm-slim AS runtime
 
@@ -18,5 +18,5 @@ COPY config ./config
 RUN mkdir -p /app/data
 
 FROM runtime AS app
-COPY --from=builder /app/target/release/gytags-roster /usr/local/bin/gytags-roster
-ENTRYPOINT ["/usr/local/bin/gytags-roster"]
+COPY --from=builder /app/target/release/gutags-roster /usr/local/bin/gutags-roster
+ENTRYPOINT ["/usr/local/bin/gutags-roster"]

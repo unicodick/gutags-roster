@@ -3,11 +3,11 @@ use std::path::Path;
 use tokio::sync::{broadcast, watch};
 use tracing_subscriber::EnvFilter;
 
-use gytags_roster::api::{AppState, router};
-use gytags_roster::collector::{DiscordGateway, SnapshotSync, ensure_parent_directory};
-use gytags_roster::config::{Settings, load_badge_rules, load_member_overrides};
-use gytags_roster::scraper::run;
-use gytags_roster::storage::Repository;
+use gutags_roster::api::{AppState, router};
+use gutags_roster::collector::{DiscordGateway, SnapshotSync, ensure_parent_directory};
+use gutags_roster::config::{Settings, load_badge_rules, load_member_overrides};
+use gutags_roster::scraper::run;
+use gutags_roster::storage::Repository;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -47,12 +47,12 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(address = %settings.bind_addr, "backend started");
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
     tokio::spawn(async move {
-        gytags_roster::shutdown::wait().await;
+        gutags_roster::shutdown::wait().await;
         let _ = shutdown_tx.send(true);
     });
 
     let api = axum::serve(listener, router(state))
-        .with_graceful_shutdown(gytags_roster::shutdown::requested(shutdown_rx.clone()));
+        .with_graceful_shutdown(gutags_roster::shutdown::requested(shutdown_rx.clone()));
     tokio::try_join!(async { api.await.context("API server failed") }, async {
         run(gateway, sync, shutdown_rx).await;
         Ok::<(), anyhow::Error>(())
