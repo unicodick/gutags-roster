@@ -36,13 +36,15 @@ Nicknames are normalized server-side. An empty `nicknames` array subscribes to t
     {
       "nickname": "setunicode",
       "status": "ok",
-      "badges": ["academ"]
+      "badges": ["academ", "team_5"]
     }
   ]
 }
 ```
 
 Member statuses are `ok`, `ambiguous`, and `not_found`. Ambiguous nicknames never receive badges.
+Full snapshots include only members with at least one badge. A subscribed nickname without a
+career or team role is returned as `not_found`.
 
 ## Subscription updates
 
