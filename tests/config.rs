@@ -63,9 +63,9 @@ fn loads_member_overrides_from_config() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/overrides.json");
     let members = load_member_overrides(path).unwrap();
 
-    assert_eq!(members.len(), 3);
+    assert_eq!(members.len(), 2);
     assert_eq!(members[0].nickname, "Likholesye");
-    assert_eq!(members[2].discord_id, "959458266713321482");
+    assert_eq!(members[1].discord_id, "959458266713321482");
 }
 
 #[test]
