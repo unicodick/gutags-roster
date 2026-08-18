@@ -1,25 +1,26 @@
-use super::BadgeRule;
+use super::{BadgeGroup, BadgeRule};
 
 pub fn derive_badges(role_ids: &[String], rules: &[BadgeRule]) -> Vec<String> {
-    let mut selected: Vec<&BadgeRule> = rules
-        .iter()
-        .filter(|rule| role_ids.iter().any(|role_id| role_id == &rule.role_id))
-        .collect();
-
-    selected.sort_by(|left, right| {
-        right
-            .priority
-            .cmp(&left.priority)
-            .then_with(|| left.badge_id.cmp(&right.badge_id))
-    });
-
-    selected
+    [BadgeGroup::Career, BadgeGroup::Team]
         .into_iter()
+        .filter_map(|group| best_rule(role_ids, rules, group))
         .map(|rule| rule.badge_id.clone())
-        .fold(Vec::new(), |mut badges, badge| {
-            if !badges.contains(&badge) {
-                badges.push(badge);
-            }
-            badges
+        .collect()
+}
+
+fn best_rule<'a>(
+    role_ids: &[String],
+    rules: &'a [BadgeRule],
+    group: BadgeGroup,
+) -> Option<&'a BadgeRule> {
+    rules
+        .iter()
+        .filter(|rule| {
+            rule.group == group && role_ids.iter().any(|role_id| role_id == &rule.role_id)
+        })
+        .min_by(|left, right| {
+            left.priority
+                .cmp(&right.priority)
+                .then_with(|| left.badge_id.cmp(&right.badge_id))
         })
 }

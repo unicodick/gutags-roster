@@ -1,5 +1,5 @@
 use gytags_roster::domain::{
-    BadgeRule, DomainError, derive_badges, normalize_nickname, normalize_nicknames,
+    BadgeGroup, BadgeRule, DomainError, derive_badges, normalize_nickname, normalize_nicknames,
 };
 
 #[test]
@@ -12,27 +12,54 @@ fn normalizes_nickname_without_merging_symbols() {
 }
 
 #[test]
-fn derives_priority_ordered_unique_badges() {
+fn derives_highest_career_and_team_badges() {
     let rules = vec![
         BadgeRule {
-            role_id: "r1".into(),
-            badge_id: "builder".into(),
-            priority: 10,
+            role_id: "career_low".into(),
+            badge_id: "academ".into(),
+            group: BadgeGroup::Career,
+            priority: 8,
         },
         BadgeRule {
-            role_id: "r2".into(),
-            badge_id: "staff".into(),
-            priority: 100,
+            role_id: "career_high".into(),
+            badge_id: "head".into(),
+            group: BadgeGroup::Career,
+            priority: 1,
         },
         BadgeRule {
-            role_id: "r3".into(),
-            badge_id: "staff".into(),
+            role_id: "team_low".into(),
+            badge_id: "team_5".into(),
+            group: BadgeGroup::Team,
+            priority: 5,
+        },
+        BadgeRule {
+            role_id: "team_high".into(),
+            badge_id: "team_1".into(),
+            group: BadgeGroup::Team,
             priority: 1,
         },
     ];
-    let roles = vec!["r1".into(), "r2".into(), "r3".into()];
+    let roles = vec![
+        "career_low".into(),
+        "career_high".into(),
+        "team_low".into(),
+        "team_high".into(),
+    ];
 
-    assert_eq!(derive_badges(&roles, &rules), vec!["staff", "builder"]);
+    assert_eq!(derive_badges(&roles, &rules), vec!["head", "team_1"]);
+}
+
+#[test]
+fn derives_only_the_available_badge_groups() {
+    let rules = vec![BadgeRule {
+        role_id: "team".into(),
+        badge_id: "team_3".into(),
+        group: BadgeGroup::Team,
+        priority: 3,
+    }];
+
+    assert_eq!(derive_badges(&["team".into()], &rules), vec!["team_3"]);
+    assert!(derive_badges(&[], &rules).is_empty());
 }
 
 #[test]

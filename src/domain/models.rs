@@ -9,11 +9,18 @@ pub struct RawMember {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum BadgeGroup {
+    Career,
+    Team,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct BadgeRule {
     pub role_id: String,
     pub badge_id: String,
-    #[serde(default)]
+    pub group: BadgeGroup,
     pub priority: i32,
 }
 

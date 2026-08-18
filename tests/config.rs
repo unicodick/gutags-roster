@@ -28,7 +28,11 @@ fn temp_overrides_path() -> PathBuf {
 #[test]
 fn rejects_badge_rules_without_role_or_badge_ids() {
     let path = temp_rules_path();
-    fs::write(&path, r#"{"rules":[{"role_id":"","badge_id":"staff"}]}"#).unwrap();
+    fs::write(
+        &path,
+        r#"{"rules":[{"role_id":"","badge_id":"staff","group":"career","priority":1}]}"#,
+    )
+    .unwrap();
 
     let result = load_badge_rules(&path);
     fs::remove_file(path).unwrap();
@@ -44,7 +48,7 @@ fn rejects_unknown_badge_rule_fields() {
     let path = temp_rules_path();
     fs::write(
         &path,
-        r#"{"rules":[{"role_id":"role","badge_id":"staff","unexpected":true}]}"#,
+        r#"{"rules":[{"role_id":"role","badge_id":"staff","group":"career","priority":1,"unexpected":true}]}"#,
     )
     .unwrap();
 
@@ -61,7 +65,7 @@ fn loads_member_overrides_from_config() {
 
     assert_eq!(members.len(), 3);
     assert_eq!(members[0].nickname, "Likholesye");
-    assert_eq!(members[2].badges, vec!["yrod"]);
+    assert_eq!(members[2].discord_id, "959458266713321482");
 }
 
 #[test]

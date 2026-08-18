@@ -5,7 +5,7 @@ mod nicknames;
 
 pub use badges::derive_badges;
 pub use errors::DomainError;
-pub use models::{BadgeRule, MemberOverride, MemberRecord, RawMember};
+pub use models::{BadgeGroup, BadgeRule, MemberOverride, MemberRecord, RawMember};
 pub use nicknames::{MAX_NICKNAMES, normalize_nickname, normalize_nicknames};
 
 pub fn build_member_record(

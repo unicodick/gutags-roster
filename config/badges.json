@@ -1,29 +1,82 @@
 {
   "rules": [
     {
-      "role_id": "1431742100940128347",
-      "badge_id": "academ",
-      "priority": 10
+      "role_id": "1431744883671957576",
+      "badge_id": "head",
+      "group": "career",
+      "priority": 1
     },
     {
-      "role_id": "1433776648209039391",
-      "badge_id": "novichek",
-      "priority": 60
+      "role_id": "1433909147987869728",
+      "badge_id": "deputy",
+      "group": "career",
+      "priority": 2
+    },
+    {
+      "role_id": "1433907756779442257",
+      "badge_id": "htyrod",
+      "group": "career",
+      "priority": 3
+    },
+    {
+      "role_id": "1433907719668109455",
+      "badge_id": "warden",
+      "group": "career",
+      "priority": 4
+    },
+    {
+      "role_id": "1433907683869589564",
+      "badge_id": "intern",
+      "group": "career",
+      "priority": 5
     },
     {
       "role_id": "1433750152316719211",
       "badge_id": "yrod",
-      "priority": 80
+      "group": "career",
+      "priority": 6
     },
     {
-      "role_id": "1431744883671957576",
-      "badge_id": "staff",
-      "priority": 100
+      "role_id": "1433776648209039391",
+      "badge_id": "novichek",
+      "group": "career",
+      "priority": 7
     },
     {
-      "role_id": "1433909147987869728",
-      "badge_id": "staff",
-      "priority": 100
+      "role_id": "1431742100940128347",
+      "badge_id": "academ",
+      "group": "career",
+      "priority": 8
+    },
+    {
+      "role_id": "1531683424903893032",
+      "badge_id": "team_1",
+      "group": "team",
+      "priority": 1
+    },
+    {
+      "role_id": "1531683540360630463",
+      "badge_id": "team_2",
+      "group": "team",
+      "priority": 2
+    },
+    {
+      "role_id": "1531683680886722661",
+      "badge_id": "team_3",
+      "group": "team",
+      "priority": 3
+    },
+    {
+      "role_id": "1531683801258787017",
+      "badge_id": "team_4",
+      "group": "team",
+      "priority": 4
+    },
+    {
+      "role_id": "1531683879466041385",
+      "badge_id": "team_5",
+      "group": "team",
+      "priority": 5
     }
   ]
 }
