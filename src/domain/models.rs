@@ -29,10 +29,6 @@ pub struct BadgeRule {
 pub struct MemberOverride {
     pub discord_id: String,
     pub nickname: String,
-    #[serde(default)]
-    pub role_ids: Vec<String>,
-    #[serde(default)]
-    pub badges: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

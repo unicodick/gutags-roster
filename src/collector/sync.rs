@@ -44,25 +44,18 @@ impl SnapshotSync {
             .into_iter()
             .map(|member| build_member_record(member, &self.badge_rules, observed_at))
             .collect::<Result<Vec<_>, _>>()?;
-        let override_ids = self
-            .member_overrides
-            .iter()
-            .map(|record| record.discord_id.clone())
-            .collect::<HashSet<_>>();
         let records = apply_overrides(records, &self.member_overrides, observed_at)?;
-        self.apply_records(records, &override_ids, observed_at)
-            .await
+        self.apply_records(records, observed_at).await
     }
 
     async fn apply_records(
         &self,
         records: Vec<crate::domain::MemberRecord>,
-        override_ids: &HashSet<String>,
         synced_at: i64,
     ) -> Result<i64, CollectorError> {
         let previous_records = self.repository.members_by_keys(&[]).await?;
-        let previous_size = snapshot_size_without_overrides(&previous_records, override_ids);
-        let actual_size = snapshot_size_without_overrides(&records, override_ids);
+        let previous_size = previous_records.len();
+        let actual_size = records.len();
         let minimum_size = previous_size
             .saturating_mul(MIN_RETAINED_SNAPSHOT_PERCENT)
             .div_ceil(100);
@@ -86,16 +79,6 @@ impl SnapshotSync {
     }
 }
 
-fn snapshot_size_without_overrides(
-    records: &[MemberRecord],
-    override_ids: &HashSet<String>,
-) -> usize {
-    records
-        .iter()
-        .filter(|record| !override_ids.contains(record.discord_id.as_str()))
-        .count()
-}
-
 fn apply_overrides(
     mut records: Vec<MemberRecord>,
     overrides: &[MemberOverride],
@@ -103,22 +86,13 @@ fn apply_overrides(
 ) -> Result<Vec<MemberRecord>, CollectorError> {
     for override_record in overrides {
         let nickname_key = normalize_nickname(&override_record.nickname)?;
-        let replacement = MemberRecord {
-            discord_id: override_record.discord_id.clone(),
-            nickname_raw: override_record.nickname.trim().to_owned(),
-            nickname_key,
-            role_ids: override_record.role_ids.clone(),
-            badges: override_record.badges.clone(),
-            observed_at,
-        };
-
         if let Some(record) = records
             .iter_mut()
             .find(|record| record.discord_id == override_record.discord_id)
         {
-            *record = replacement;
-        } else {
-            records.push(replacement);
+            record.nickname_raw = override_record.nickname.trim().to_owned();
+            record.nickname_key = nickname_key;
+            record.observed_at = observed_at;
         }
     }
 

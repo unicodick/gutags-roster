@@ -1,5 +1,5 @@
 use gytags_roster::collector::{CollectorError, SnapshotSync};
-use gytags_roster::domain::{MemberOverride, RawMember};
+use gytags_roster::domain::{BadgeGroup, BadgeRule, MemberOverride, RawMember};
 use gytags_roster::storage::Repository;
 use tokio::sync::broadcast;
 
@@ -70,17 +70,20 @@ async fn rejects_duplicate_discord_ids_and_detects_raw_nickname_changes() {
 }
 
 #[tokio::test]
-async fn applies_admin_overrides_to_discord_snapshots() {
+async fn applies_nickname_overrides_to_discord_snapshots() {
     let repository = Repository::connect("sqlite::memory:").await.unwrap();
     let (events, _) = broadcast::channel(8);
     let sync = SnapshotSync::new(
         repository.clone(),
-        Vec::new(),
+        vec![BadgeRule {
+            role_id: "career".into(),
+            badge_id: "head".into(),
+            group: BadgeGroup::Career,
+            priority: 1,
+        }],
         vec![MemberOverride {
             discord_id: "376674641676206080".into(),
             nickname: "Likholesye".into(),
-            role_ids: vec!["staff".into()],
-            badges: vec!["staff".into()],
         }],
         events,
     );
@@ -88,7 +91,7 @@ async fn applies_admin_overrides_to_discord_snapshots() {
     sync.apply(vec![member(
         "376674641676206080",
         "OldDiscordName",
-        "staff",
+        "career",
     )])
     .await
     .unwrap();
@@ -100,7 +103,27 @@ async fn applies_admin_overrides_to_discord_snapshots() {
     assert_eq!(records.len(), 1);
     assert_eq!(records[0].discord_id, "376674641676206080");
     assert_eq!(records[0].nickname_raw, "Likholesye");
-    assert_eq!(records[0].badges, vec!["staff"]);
+    assert_eq!(records[0].role_ids, vec!["career"]);
+    assert_eq!(records[0].badges, vec!["head"]);
+}
+
+#[tokio::test]
+async fn ignores_nickname_overrides_for_missing_members() {
+    let repository = Repository::connect("sqlite::memory:").await.unwrap();
+    let (events, _) = broadcast::channel(8);
+    let sync = SnapshotSync::new(
+        repository.clone(),
+        Vec::new(),
+        vec![MemberOverride {
+            discord_id: "missing".into(),
+            nickname: "Missing".into(),
+        }],
+        events,
+    );
+
+    sync.apply(Vec::new()).await.unwrap();
+
+    assert!(repository.members_by_keys(&[]).await.unwrap().is_empty());
 }
 
 #[tokio::test]

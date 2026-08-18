@@ -88,3 +88,18 @@ fn rejects_duplicate_member_override_ids() {
         Err(ConfigError::InvalidMemberOverride { index: 1, .. })
     ));
 }
+
+#[test]
+fn rejects_role_and_badge_override_fields() {
+    let path = temp_overrides_path();
+    fs::write(
+        &path,
+        r#"{"members":[{"discord_id":"1","nickname":"Player","role_ids":["role"],"badges":["head"]}]}"#,
+    )
+    .unwrap();
+
+    let result = load_member_overrides(&path);
+    fs::remove_file(path).unwrap();
+
+    assert!(matches!(result, Err(ConfigError::Json(_))));
+}
